@@ -1,0 +1,5 @@
+[package]
+
+name = "zinc"
+version = "0.0.1"
+authors = ["Garrett Squire <garrettsquire@gmail.com>"]
