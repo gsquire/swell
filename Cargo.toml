@@ -3,3 +3,7 @@
 name = "zinc"
 version = "0.0.1"
 authors = ["Garrett Squire <garrettsquire@gmail.com>"]
+
+[dependencies.hyper]
+
+git = "https://github.com/hyperium/hyper.git"
