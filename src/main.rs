@@ -4,10 +4,16 @@ use std::io::{TcpListener, TcpStream};
 use std::io::{Acceptor, Listener};
 
 fn handle_client(mut stream: TcpStream) {
-    stream.set_timeout(Some(10));
-    match stream.read_to_string() {
+    const SIZE: usize = 1024;
+    let mut buf: Vec<u8> = Vec::with_capacity(SIZE);
+    match stream.read(buf.as_mut_slice()) {
         Err(e) => { println!("Error reading request: {}", e); }
-        Ok(req) => { println!("The reqeust was: {}", req); }
+        Ok(_) => {
+            match std::str::from_utf8(buf.as_mut_slice()) {
+                Err(e) => { println!("Error making buffer: {}", e); }
+                Ok(req) => { println!("Here is what I got: {}", req); }
+            }
+        }
     }
 
     let resp = b"HTTP/1.1 200 OK\r\nContent-Type: text/html; Connection: close;\r\n\r\nHello!\n";
