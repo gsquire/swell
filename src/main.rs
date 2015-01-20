@@ -3,14 +3,14 @@ extern crate hyper;
 use std::io::{TcpListener, TcpStream};
 use std::io::{Acceptor, Listener};
 
-use hyper::http::read_request_line;
-
 fn handle_client(mut stream: TcpStream) {
+    stream.set_timeout(Some(10));
     match stream.read_to_string() {
-        Err(e) => { println!("error reading request: {}", e); }
-        Ok(req) => { println!("the request is: {}", req); }
+        Err(e) => { println!("Error reading request: {}", e); }
+        Ok(req) => { println!("The reqeust was: {}", req); }
     }
-    let resp = b"HTTP/1.1 200 OK\r\nContent-Type: text/html;\r\n\r\nHello!\n";
+
+    let resp = b"HTTP/1.1 200 OK\r\nContent-Type: text/html; Connection: close;\r\n\r\nHello!\n";
     match stream.write(resp) {
         Err(e) => { println!("Error writing response: {}", e); }
         Ok(_) => {}
