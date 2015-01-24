@@ -1,39 +1,53 @@
+#![allow(unstable)]
 extern crate hyper;
 
-use std::io::{TcpListener, TcpStream};
-use std::io::{Acceptor, Listener};
+#[macro_use] extern crate log;
 
-fn handle_client(mut stream: TcpStream) {
-    const SIZE: usize = 1024;
-    let mut buf: Vec<u8> = Vec::with_capacity(SIZE);
-    match stream.read(buf.as_mut_slice()) {
-        Err(e) => { println!("Error reading request: {}", e); }
-        Ok(_) => {
-            match std::str::from_utf8(buf.as_mut_slice()) {
-                Err(e) => { println!("Error making buffer: {}", e); }
-                Ok(req) => { println!("Here is what I got: {}", req); }
-            }
+use std::io::net::ip::Ipv4Addr;
+
+use hyper::Get;
+use hyper::header::ContentLength;
+use hyper::server::{Server, Request, Response};
+use hyper::uri::RequestUri::AbsolutePath;
+
+macro_rules! try_return(
+    ($e:expr) => {{
+        match $e {
+            Ok(v) => v,
+            Err(e) => { error!("Error: {}", e); return; }
         }
-    }
+    }}
+);
 
-    let resp = b"HTTP/1.1 200 OK\r\nContent-Type: text/html; Connection: close;\r\n\r\nHello!\n";
-    match stream.write(resp) {
-        Err(e) => { println!("Error writing response: {}", e); }
-        Ok(_) => {}
-    }
+fn default(req: Request, mut res: Response) {
+    match req.uri {
+        AbsolutePath(ref path) => match (&req.method, path.as_slice()) {
+            (&Get, _) => {
+                let out = b"Test\n";
+                println!("Path is: {}", path.as_slice());
+
+                res.headers_mut().set(ContentLength(out.len() as u64));
+                let mut res = try_return!(res.start());
+                try_return!(res.write(out));
+                try_return!(res.end());
+                return;
+            },
+            _ => {
+                *res.status_mut() = hyper::NotFound;
+                try_return!(res.start().and_then(|res| res.end()));
+                return;
+            }
+        },
+        _ => {
+            try_return!(res.start().and_then(|res| res.end()));
+            return;
+        }
+    };
 }
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:42007");
-
-    let mut acceptor = listener.listen();
-
-    for stream in acceptor.incoming() {
-        match stream {
-            Err(e) => { println!("Error in stream: {}", e); }
-            Ok(stream) => { handle_client(stream) }
-        }
-    }
-
-    drop(acceptor);
+    let server = Server::http(Ipv4Addr(127, 0, 0, 1), 42007);
+    let mut listener = server.listen(default).unwrap();
+    println!("Listening on port 42007...");
+    listener.await();
 }
