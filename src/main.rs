@@ -3,6 +3,7 @@ extern crate hyper;
 
 #[macro_use] extern crate log;
 
+use std::io::File;
 use std::io::net::ip::Ipv4Addr;
 
 use hyper::Get;
@@ -23,14 +24,14 @@ fn default(req: Request, mut res: Response) {
     match req.uri {
         AbsolutePath(ref path) => match (&req.method, path.as_slice()) {
             (&Get, _) => {
-                let out = b"Test\n";
-                println!("Path is: {}", path.as_slice());
-
-                res.headers_mut().set(ContentLength(out.len() as u64));
-                let mut res = try_return!(res.start());
-                try_return!(res.write(out));
-                try_return!(res.end());
-                return;
+                if path.as_slice() == "/" {
+                    let out = try_return!(File::open(&Path::new("/Users/gsquire/poly/senior_project/html/index.html")).read_to_string());
+                    res.headers_mut().set(ContentLength(out.len() as u64));
+                    let mut res = try_return!(res.start());
+                    try_return!(res.write_str(out.as_slice()));
+                    try_return!(res.end());
+                    return;
+                }
             },
             _ => {
                 *res.status_mut() = hyper::NotFound;
