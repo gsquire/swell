@@ -66,9 +66,19 @@ fn base(req: Request, mut res: Response) {
     };
 }
 
+/// The main method that makes a new hyper Server on port 42007.
+/// It starts listening and loops until we send the kill signal.
 fn main() {
     let server = Server::http(Ipv4Addr(127, 0, 0, 1), 42007);
     let mut listener = server.listen(base).unwrap();
     println!("Listening on port 42007...");
     listener.await();
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn works() {
+        assert!(true);
+    }
 }
