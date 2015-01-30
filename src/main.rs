@@ -26,14 +26,14 @@ macro_rules! try_return(
 // once to be easier on memory.
 fn buffered_file_read(file: File, file_size: u64, mut res: Response) {
     res.headers_mut().set(ContentLength(file_size));
-    let mut res = try_return!(res.start());
+    let mut response = try_return!(res.start());
     let mut reader = BufferedReader::new(file);
 
     for line in reader.lines() {
-        try_return!(res.write_str(line.unwrap().as_slice()));
+        try_return!(response.write_str(line.unwrap().as_slice()));
     }
 
-    try_return!(res.end());
+    try_return!(response.end());
 }
 
 // Write a static file as the response back in a GET request.
@@ -49,9 +49,20 @@ fn send_file(path: &str, mut res: Response) {
         file_path = Path::new(root.to_string() + path);
     }
 
+    // We send a 404 response in the error case here, 203 is the size of
+    // the file since it will not change.
     let file_stat = match file_path.stat() {
         Ok(stat) => stat,
-        Err(e) => { panic!("Could not perform stat on file: {}", e); }
+        Err(e) => {
+            println!("Could not perform stat on file: {}", e);
+            const ERROR_FILE_SIZE: u64 = 203;
+            *res.status_mut() = hyper::NotFound;
+            let error_file = Path::new(root.to_string() + "/404.html");
+            file_to_send = try_return!(File::open(&error_file));
+
+            buffered_file_read(file_to_send, ERROR_FILE_SIZE, res);
+            return;
+        }
     };
 
     file_to_send = try_return!(File::open(&file_path));
