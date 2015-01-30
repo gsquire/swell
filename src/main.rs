@@ -3,6 +3,7 @@ extern crate hyper;
 
 #[macro_use] extern crate log;
 
+use std::io::BufferedReader;
 use std::io::File;
 use std::io::fs::PathExtensions;
 use std::io::net::ip::Ipv4Addr;
@@ -21,29 +22,40 @@ macro_rules! try_return(
     }}
 );
 
-fn send_file(path: &str, mut res: Response) {
-    let root = "/Users/gsquire/poly/senior_project/html";
-    let out: String;
+// Send a file as the response, but read it line by line instead of all at
+// once to be easier on memory.
+fn buffered_file_read(file: File, file_size: u64, mut res: Response) {
+    res.headers_mut().set(ContentLength(file_size));
+    let mut res = try_return!(res.start());
+    let mut reader = BufferedReader::new(file);
 
-    if path == "/" {
-        out = try_return!(File::open(&Path::new(root.to_string() + "/index.html")).read_to_string());
-    } else {
-        // Let us check if the path actually exists.
-        let path = Path::new(root.to_string() + path);
-        if path.exists() {
-            out = try_return!(File::open(&path).read_to_string());
-        } else {
-            // Return a 404.
-            *res.status_mut() = hyper::NotFound;
-            try_return!(res.start().and_then(|res| res.end()));
-            return;
-        }
+    for line in reader.lines() {
+        try_return!(res.write_str(line.unwrap().as_slice()));
     }
 
-    res.headers_mut().set(ContentLength(out.len() as u64));
-    let mut res = try_return!(res.start());
-    try_return!(res.write_str(out.as_slice()));
     try_return!(res.end());
+}
+
+fn send_file(path: &str, mut res: Response) {
+    let root = "/Users/gsquire/poly/senior_project/html";
+    let file_path: Path;
+    let file_to_send: File;
+
+    // By default, try and send the index 
+    if path == "/" {
+        file_path = Path::new(root.to_string() + "/index.html");
+    } else {
+        file_path = Path::new(root.to_string() + path);
+    }
+
+    let file_stat = match file_path.stat() {
+        Ok(stat) => stat,
+        Err(e) => { panic!("Could not perform stat on file: {}", e); }
+    };
+
+    file_to_send = try_return!(File::open(&file_path));
+
+    buffered_file_read(file_to_send, file_stat.size, res);
 }
 
 fn base(req: Request, mut res: Response) {
