@@ -36,6 +36,7 @@ fn buffered_file_read(file: File, file_size: u64, mut res: Response) {
     try_return!(res.end());
 }
 
+// Write a static file as the response back in a GET request.
 fn send_file(path: &str, mut res: Response) {
     let root = "/Users/gsquire/poly/senior_project/html";
     let file_path: Path;
@@ -81,8 +82,9 @@ fn base(req: Request, mut res: Response) {
 /// The main method that makes a new hyper Server on port 42007.
 /// It starts listening and loops until we send the kill signal.
 fn main() {
+    const NUM_THREADS: usize = 64;
     let server = Server::http(Ipv4Addr(127, 0, 0, 1), 42007);
-    let mut listener = server.listen(base).unwrap();
+    let mut listener = server.listen_threads(base, NUM_THREADS).unwrap();
     println!("Listening on port 42007...");
     listener.await();
 }
