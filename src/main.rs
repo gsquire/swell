@@ -25,15 +25,14 @@ macro_rules! try_return(
     }}
 );
 
-// Send a file as the response, but read it line by line instead of all at
-// once to be easier on memory.
+// Send a file as the response, reading all of the bytes into a buffer and
+// then sending that back in the response.
 fn buffered_file_read(file: File, res: Response) {
     let mut response = try_return!(res.start());
     let mut reader = BufferedReader::new(file);
+    let bytes = reader.read_to_end().unwrap();
 
-    for line in reader.lines() {
-        try_return!(response.write_str(line.unwrap().as_slice()));
-    }
+    try_return!(response.write(bytes.as_slice()));
 
     try_return!(response.end());
 }
