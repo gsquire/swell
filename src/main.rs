@@ -131,8 +131,25 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use super::get_content_type;
+
+    use hyper::mime::{Mime, TopLevel, SubLevel};
+
     #[test]
-    fn works() {
+    fn testing_check() {
         assert!(true);
+    }
+
+    #[test]
+    fn check_jpeg_content_type() {
+        let jpeg_mime = Mime(TopLevel::Image, SubLevel::Jpeg, Vec::new());
+        assert_eq!(jpeg_mime, get_content_type("jpeg".as_slice()));
+        assert_eq!(jpeg_mime, get_content_type("jpg".as_slice()));
+    }
+
+    #[test]
+    fn check_js_content_type() {
+        let js_mime = Mime(TopLevel::Application, SubLevel::Javascript, Vec::new());
+        assert_eq!(js_mime, get_content_type("js".as_slice()));
     }
 }
