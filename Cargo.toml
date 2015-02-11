@@ -7,3 +7,7 @@ authors = ["Garrett Squire <garrettsquire@gmail.com>"]
 [dependencies.hyper]
 
 git = "https://github.com/hyperium/hyper.git"
+
+[dependencies.toml]
+
+toml = "0.1"

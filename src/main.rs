@@ -1,12 +1,17 @@
-#![allow(unstable)]
+#![feature(path)]
+#![feature(io)]
+#![feature(core)]
+#![feature(rustc_private)]
+
 extern crate hyper;
+extern crate toml;
 
 #[macro_use] extern crate log;
 
-use std::io::BufferedReader;
-use std::io::File;
-use std::io::fs::PathExtensions;
-use std::io::net::ip::Ipv4Addr;
+use std::old_io::BufferedReader;
+use std::old_io::File;
+use std::old_io::fs::PathExtensions;
+use std::old_io::net::ip::Ipv4Addr;
 use std::vec::Vec;
 
 use hyper::Get;
@@ -32,7 +37,7 @@ fn buffered_file_read(file: File, res: Response) {
     let mut reader = BufferedReader::new(file);
     let bytes = reader.read_to_end().unwrap();
 
-    try_return!(response.write(bytes.as_slice()));
+    try_return!(response.write_all(bytes.as_slice()));
 
     try_return!(response.end());
 }
@@ -122,6 +127,14 @@ fn base(req: Request, mut res: Response) {
 /// It starts listening and loops until we send the kill signal.
 fn main() {
     const NUM_THREADS: usize = 64;
+
+    let config =
+        File::open(&Path::new("/Users/gsquire/poly/senior_project/swell_config.toml")).read_to_string().unwrap();
+
+    // Parse the config file.
+    let value: toml::Value = config.as_slice().parse().unwrap();
+    println!("Port is: {}", value.lookup("server.port").unwrap());
+
     let server = Server::http(Ipv4Addr(127, 0, 0, 1), 42007);
     let mut listener = server.listen_threads(base, NUM_THREADS).unwrap();
     println!("Listening on port 42007...");
