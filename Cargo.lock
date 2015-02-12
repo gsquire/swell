@@ -3,6 +3,7 @@ name = "swell"
 version = "0.0.1"
 dependencies = [
  "hyper 0.1.11 (git+https://github.com/hyperium/hyper.git)",
+ "lazy_static 0.1.7 (git+https://github.com/Kimundi/lazy-static.rs)",
  "toml 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -37,6 +38,11 @@ dependencies = [
  "unsafe-any 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 0.2.20 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "0.1.7"
+source = "git+https://github.com/Kimundi/lazy-static.rs#b48b0c551087af9d598a0452f4e3973d98d4419b"
 
 [[package]]
 name = "libc"

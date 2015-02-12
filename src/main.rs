@@ -4,9 +4,14 @@
 #![feature(rustc_private)]
 
 extern crate hyper;
+extern crate swell;
 extern crate toml;
 
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
+
+#[macro_use]
+extern crate lazy_static;
 
 use std::old_io::BufferedReader;
 use std::old_io::File;
@@ -20,6 +25,11 @@ use hyper::header::ContentType;
 use hyper::mime::{Mime, TopLevel, SubLevel};
 use hyper::server::{Server, Request, Response};
 use hyper::uri::RequestUri::AbsolutePath;
+
+// Allows for dynamic static variable creation at runtime.
+lazy_static! {
+    static ref config: toml::Value = swell::config::parse_config();
+}
 
 macro_rules! try_return(
     ($e:expr) => {{
@@ -60,7 +70,7 @@ fn get_content_type(extension: &str) -> Mime {
 
 // Write a static file as the response back in a GET request.
 fn send_file(path: &str, mut res: Response) {
-    let root = "/Users/gsquire/poly/senior_project/html";
+    let root = config.lookup("server.document_root").unwrap().as_str().unwrap();
     let file_path: Path;
     let file_to_send: File;
 
@@ -89,7 +99,8 @@ fn send_file(path: &str, mut res: Response) {
             file_to_send = try_return!(File::open(&error_file));
 
             res.headers_mut().set(ContentLength(203)); // This is constant.
-            res.headers_mut().set(ContentType(get_content_type("html".as_slice())));
+            res.headers_mut().set(
+                ContentType(get_content_type("html".as_slice())));
             buffered_file_read(file_to_send, res);
             return;
         }
@@ -127,16 +138,11 @@ fn base(req: Request, mut res: Response) {
 /// It starts listening and loops until we send the kill signal.
 fn main() {
     const NUM_THREADS: usize = 64;
-
-    let config =
-        File::open(&Path::new("/Users/gsquire/poly/senior_project/swell_config.toml")).read_to_string().unwrap();
-
-    // Parse the config file.
-    let value: toml::Value = config.as_slice().parse().unwrap();
-    println!("Port is: {}", value.lookup("server.port").unwrap());
-
-    let server = Server::http(Ipv4Addr(127, 0, 0, 1), 42007);
+    let port: u16 =
+        config.lookup("server.port").unwrap().as_integer().unwrap() as u16;
+    let server = Server::http(Ipv4Addr(127, 0, 0, 1), port);
     let mut listener = server.listen_threads(base, NUM_THREADS).unwrap();
+
     println!("Listening on port 42007...");
     listener.await();
 }
