@@ -4,7 +4,7 @@ version = "0.0.1"
 dependencies = [
  "hyper 0.1.11 (git+https://github.com/hyperium/hyper.git)",
  "lazy_static 0.1.7 (git+https://github.com/Kimundi/lazy-static.rs)",
- "toml 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.1.17 (git+https://github.com/alexcrichton/toml-rs.git)",
 ]
 
 [[package]]
@@ -120,7 +120,7 @@ dependencies = [
 [[package]]
 name = "toml"
 version = "0.1.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/alexcrichton/toml-rs.git#39ffe7a4495283d2c99f5a4b9d10fbb001a8605c"
 dependencies = [
  "rustc-serialize 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

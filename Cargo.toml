@@ -10,7 +10,7 @@ git = "https://github.com/hyperium/hyper.git"
 
 [dependencies.toml]
 
-toml = "0.1"
+git = "https://github.com/alexcrichton/toml-rs.git"
 
 [dependencies.lazy_static]
 
