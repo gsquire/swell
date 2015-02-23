@@ -45,8 +45,8 @@ macro_rules! try_return(
 fn buffered_file_read(file: File, res: Response) {
     let mut response = try_return!(res.start());
     let mut reader = BufferedReader::new(file);
-    let bytes = reader.read_to_end().unwrap();
 
+    let bytes = reader.read_to_end().unwrap();
     try_return!(response.write_all(bytes.as_slice()));
 
     try_return!(response.end());
@@ -85,7 +85,10 @@ fn send_file(path: &str, mut res: Response) {
     }
 
     // Get the file extension so we can set the MIME type.
-    let ext = file_path.extension().unwrap(); 
+    let ext = match file_path.extension() {
+        Some(v) => v,
+        None => b"None"
+    };
     let ext_str = std::str::from_utf8(ext).unwrap();
 
     // We send a 404 response in the error case here, 203 is the size of
@@ -134,17 +137,19 @@ fn base(req: Request, mut res: Response) {
     };
 }
 
-/// The main method that makes a new hyper Server on port 42007.
+/// The main method that makes a new hyper Server on the port specified in the
+/// configuration file.
 /// It starts listening and loops until we send the kill signal.
 fn main() {
-    const NUM_THREADS: usize = 64;
+    let num_threads: usize =
+        config.lookup("server.num_threads").unwrap().as_integer().unwrap() as
+        usize;
     let port: u16 =
         config.lookup("server.port").unwrap().as_integer().unwrap() as u16;
-    let server = Server::http(Ipv4Addr(127, 0, 0, 1), port);
-    let mut listener = server.listen_threads(base, NUM_THREADS).unwrap();
+    let server = Server::http(Ipv4Addr(0, 0, 0, 0), port);
+    let mut _listener = server.listen_threads(base, num_threads).unwrap();
 
     println!("Listening on port 42007...");
-    listener.await();
 }
 
 #[cfg(test)]
