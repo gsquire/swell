@@ -19,3 +19,12 @@ git = "https://github.com/Kimundi/lazy-static.rs"
 [dependencies.artifact]
 
 artifact = "0.0.13"
+
+[profile.dev]
+
+opt-level = 2
+debug = true
+
+[profile.release]
+
+opt-level = 3

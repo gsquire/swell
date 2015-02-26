@@ -1,5 +1,5 @@
-#![feature(path)]
-#![feature(io)]
+#![feature(old_path)]
+#![feature(old_io)]
 #![feature(core)]
 #![feature(rustc_private)]
 
