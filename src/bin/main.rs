@@ -1,3 +1,6 @@
+#![crate_id="swell"]
+#![crate_type="bin"]
+
 #![feature(old_path)]
 #![feature(old_io)]
 #![feature(core)]
@@ -31,6 +34,7 @@ lazy_static! {
     static ref config: toml::Value = swell::config::parse_config();
 }
 
+/// A macro I borrowed from Hyper to help unwrap a Result<T> enum.
 macro_rules! try_return(
     ($e:expr) => {{
         match $e {
@@ -40,8 +44,9 @@ macro_rules! try_return(
     }}
 );
 
-// Send a file as the response, reading all of the bytes into a buffer and
-// then sending that back in the response.
+/// Take a file object and create a buffered reader to read from and send back
+/// to the client. It ends the Hyper response as well since the resource will
+/// have been successfully returned.
 fn buffered_file_read(file: File, res: Response) {
     let mut response = try_return!(res.start());
     let mut reader = BufferedReader::new(file);
@@ -52,8 +57,9 @@ fn buffered_file_read(file: File, res: Response) {
     try_return!(response.end());
 }
 
-// Given a path extension, return back the proper MIME type.
-// The default is text/plain.
+/// This method takes a file path extension and returns a Hyper Mime structure.
+/// It gives us a type-safe structure that Hyper will correctly encode in the
+/// response. The options are empty for now, as this rarely needs to be set.
 fn get_content_type(extension: &str) -> Mime {
     let opts = Vec::new(); // This is empty as we don't use options.
 
@@ -68,7 +74,12 @@ fn get_content_type(extension: &str) -> Mime {
     }
 }
 
-// Write a static file as the response back in a GET request.
+/// This is a generic method that helps us write a file (resource) back to a
+/// client. It checks for the default index and builds a path accordingly. It
+/// is also responsible for getting the resources extension so that it can set
+/// the MIME type accordingly. By default it gets the file size as well to set
+/// Content-Length for the browser's response headers. It handles a 404 case by
+/// responding with a generic 404 file.
 fn send_file(path: &str, mut res: Response) {
     let root = config.lookup("server.document_root").unwrap().as_str().unwrap();
     let file_path: Path;
@@ -117,6 +128,9 @@ fn send_file(path: &str, mut res: Response) {
     buffered_file_read(file_to_send, res);
 }
 
+/// This is the entry method for the Hyper server. It unwraps a request
+/// structure and ensures that we handle each one correctly. The response
+/// object helps us set headers and other HTTP information safely.
 fn base(req: Request, mut res: Response) {
     match req.uri {
         AbsolutePath(ref path) => match (&req.method, path.as_slice()) {

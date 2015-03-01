@@ -16,10 +16,6 @@ git = "https://github.com/alexcrichton/toml-rs.git"
 
 git = "https://github.com/Kimundi/lazy-static.rs"
 
-[dependencies.artifact]
-
-artifact = "0.0.13"
-
 [profile.dev]
 
 opt-level = 2
