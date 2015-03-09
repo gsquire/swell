@@ -50,10 +50,9 @@ macro_rules! try_return(
 fn buffered_file_read(file: File, res: Response) {
     let mut response = try_return!(res.start());
     let mut reader = BufferedReader::new(file);
-
     let bytes = reader.read_to_end().unwrap();
-    try_return!(response.write_all(bytes.as_slice()));
 
+    try_return!(response.write_all(bytes.as_slice()));
     try_return!(response.end());
 }
 
@@ -74,6 +73,15 @@ fn get_content_type(extension: &str) -> Mime {
     }
 }
 
+/// This function simply returns a string representation of the current time.
+/// It is used for logging requests.
+fn cur_time_string() -> String {
+    let cur_time = time::now();
+    let timestamp = time::strftime("%F %T", &cur_time).unwrap();
+
+    timestamp
+}
+
 /// This is a generic method that helps us write a file (resource) back to a
 /// client. It checks for the default index and builds a path accordingly. It
 /// is also responsible for getting the resources extension so that it can set
@@ -84,8 +92,6 @@ fn send_file(req: &Request, path: &str, mut res: Response) {
     let root = config.lookup("server.document_root").unwrap().as_str().unwrap();
     let file_path: Path;
     let file_to_send: File;
-    let cur_time: time::Tm;
-    let timestamp: String;
 
     // Let everyone know what cool server sent them this response.
     res.headers_mut().set(hyper::header::Server("swell".to_string()));
@@ -110,10 +116,8 @@ fn send_file(req: &Request, path: &str, mut res: Response) {
         Ok(stat) => stat,
         Err(e) => {
             error!("Could not perform stat on file: {}", e);
-            cur_time = time::now();
-            timestamp = time::strftime("%F %T", &cur_time).unwrap();
             info!("{} {} {} 404 {}",
-                  timestamp, req.method, path, req.remote_addr);
+                  cur_time_string(), req.method, path, req.remote_addr);
 
             *res.status_mut() = hyper::NotFound;
             let error_file = Path::new(root.to_string() + "/404.html");
@@ -132,9 +136,8 @@ fn send_file(req: &Request, path: &str, mut res: Response) {
     res.headers_mut().set(ContentType(get_content_type(ext_str)));
     res.headers_mut().set(ContentLength(file_stat.size));
 
-    cur_time = time::now();
-    timestamp = time::strftime("%F %T", &cur_time).unwrap();
-    info!("{} {} {} 200 {}", timestamp, req.method, path, req.remote_addr);
+    info!("{} {} {} 200 {}",
+          cur_time_string(), req.method, path, req.remote_addr);
     buffered_file_read(file_to_send, res);
 }
 
