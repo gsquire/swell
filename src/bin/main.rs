@@ -8,6 +8,7 @@
 extern crate hyper;
 extern crate swell;
 extern crate toml;
+extern crate time;
 
 #[macro_use]
 extern crate log;
@@ -79,10 +80,12 @@ fn get_content_type(extension: &str) -> Mime {
 /// the MIME type accordingly. By default it gets the file size as well to set
 /// Content-Length for the browser's response headers. It handles a 404 case by
 /// responding with a generic 404 file.
-fn send_file(path: &str, mut res: Response) {
+fn send_file(req: &Request, path: &str, mut res: Response) {
     let root = config.lookup("server.document_root").unwrap().as_str().unwrap();
     let file_path: Path;
     let file_to_send: File;
+    let cur_time: time::Tm;
+    let timestamp: String;
 
     // Let everyone know what cool server sent them this response.
     res.headers_mut().set(hyper::header::Server("swell".to_string()));
@@ -106,7 +109,12 @@ fn send_file(path: &str, mut res: Response) {
     let file_stat = match file_path.stat() {
         Ok(stat) => stat,
         Err(e) => {
-            println!("Could not perform stat on file: {}", e);
+            error!("Could not perform stat on file: {}", e);
+            cur_time = time::now();
+            timestamp = time::strftime("%F %T", &cur_time).unwrap();
+            info!("{} {} {} 404 {}",
+                  timestamp, req.method, path, req.remote_addr);
+
             *res.status_mut() = hyper::NotFound;
             let error_file = Path::new(root.to_string() + "/404.html");
             file_to_send = try_return!(File::open(&error_file));
@@ -124,6 +132,9 @@ fn send_file(path: &str, mut res: Response) {
     res.headers_mut().set(ContentType(get_content_type(ext_str)));
     res.headers_mut().set(ContentLength(file_stat.size));
 
+    cur_time = time::now();
+    timestamp = time::strftime("%F %T", &cur_time).unwrap();
+    info!("{} {} {} 200 {}", timestamp, req.method, path, req.remote_addr);
     buffered_file_read(file_to_send, res);
 }
 
@@ -134,7 +145,7 @@ fn base(req: Request, mut res: Response) {
     match req.uri {
         AbsolutePath(ref path) => match (&req.method, path.as_slice()) {
             (&Get, _) => {
-                send_file(path.as_slice(), res);
+                send_file(&req, path.as_slice(), res);
                 return;
             },
             _ => {
