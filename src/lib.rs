@@ -3,3 +3,4 @@
 #![feature(core)]
 
 pub mod config;
+pub mod logger;

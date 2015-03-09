@@ -1,4 +1,3 @@
-#![crate_id="swell"]
 #![crate_type="bin"]
 
 #![feature(old_path)]
@@ -163,7 +162,10 @@ fn main() {
     let server = Server::http(Ipv4Addr(0, 0, 0, 0), port);
     let mut _listener = server.listen_threads(base, num_threads).unwrap();
 
-    println!("Listening on port 42007...");
+    // Initialize our logging library to standard out.
+    swell::logger::init();
+
+    info!("Listening on port 42007...");
 }
 
 #[cfg(test)]
