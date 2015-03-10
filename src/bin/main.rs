@@ -4,6 +4,7 @@
 #![feature(old_io)]
 #![feature(core)]
 #![feature(rustc_private)]
+#![feature(env)]
 
 extern crate hyper;
 extern crate swell;
@@ -16,6 +17,7 @@ extern crate log;
 #[macro_use]
 extern crate lazy_static;
 
+use std::env;
 use std::old_io::BufferedReader;
 use std::old_io::File;
 use std::old_io::fs::PathExtensions;
@@ -31,7 +33,8 @@ use hyper::uri::RequestUri::AbsolutePath;
 
 // Allows for dynamic static variable creation at runtime.
 lazy_static! {
-    static ref config: toml::Value = swell::config::parse_config();
+    static ref args: Vec<String> = env::args().collect();
+    static ref config: toml::Value = swell::config::parse_config(&args[1]);
 }
 
 /// A macro I borrowed from Hyper to help unwrap a Result<T> enum.
