@@ -16,10 +16,11 @@ libraries. But for now, I can achieve a more stable build using the
 second alpha release.
 
 To run the server:
+```sh
+cargo build --release
 
-> cargo build --release
->
-> cargo run <PATH> (PATH is the file path to the configuration file used)
+cargo run PATH (PATH is the file path to the configuration file used)
+```
 
 Here is an example configuration file:
 ```toml
@@ -32,6 +33,7 @@ port = 42007
 The file format is TOML and the specifictaion for that format can be
 found [here](https://github.com/toml-lang/toml).
 
+Current configuration options:
 * document_root is the root directory from which to serve files from
 * num_threads is the number of threads the server will use
 * port is the port on which it will serve files
