@@ -30,7 +30,7 @@ document_root = "/Users/gsquire/poly/senior_project/html"
 num_threads = 16
 port = 42007
 ```
-The file format is TOML and the specifictaion for that format can be
+The file format is TOML and the specification for that format can be
 found [here](https://github.com/toml-lang/toml).
 
 Current configuration options:
