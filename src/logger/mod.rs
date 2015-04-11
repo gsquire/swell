@@ -4,15 +4,17 @@ extern crate log;
 /// the server to print to standard output using the log crate
 /// from the standard library in Rust.
 
+use self::log::{LogRecord, LogLevel, LogMetadata};
+
 struct SwellLogger;
 
 impl log::Log for SwellLogger {
-    fn enabled(&self, level: log::LogLevel, _module: &str) -> bool {
-        level <= log::LogLevel::Info
+    fn enabled(&self, metadata: &LogMetadata) -> bool {
+        metadata.level() <= LogLevel::Info
     }
 
     fn log(&self, record: &log::LogRecord) {
-        if self.enabled(record.level(), record.location().module_path) {
+        if self.enabled(record.metadata()) {
             println!("{} - {}", record.level(), record.args());
         }
     }

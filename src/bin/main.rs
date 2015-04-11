@@ -1,11 +1,3 @@
-#![crate_type="bin"]
-
-#![feature(old_path)]
-#![feature(old_io)]
-#![feature(core)]
-#![feature(rustc_private)]
-#![feature(env)]
-
 extern crate hyper;
 extern crate swell;
 extern crate toml;
@@ -18,10 +10,11 @@ extern crate log;
 extern crate lazy_static;
 
 use std::env;
-use std::old_io::BufferedReader;
-use std::old_io::File;
-use std::old_io::fs::PathExtensions;
-use std::old_io::net::ip::Ipv4Addr;
+use std::ffi::OsStr;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::{Read, Write};
+use std::path::Path;
 use std::vec::Vec;
 
 use hyper::Get;
@@ -34,7 +27,10 @@ use hyper::uri::RequestUri::AbsolutePath;
 // Allows for dynamic static variable creation at runtime.
 lazy_static! {
     static ref args: Vec<String> = env::args().collect();
-    static ref config: toml::Value = swell::config::parse_config(&args[1]);
+    //static ref config: toml::Table =
+        //swell::config::parse_config(&args[1].as_ref());
+    static ref config: toml::Table =
+        swell::config::parse_config("/Users/gsquire/poly/senior_project/swell_config.toml");
 }
 
 /// A macro I borrowed from Hyper to help unwrap a Result<T> enum.
@@ -52,10 +48,11 @@ macro_rules! try_return(
 /// have been successfully returned.
 fn buffered_file_read(file: File, res: Response) {
     let mut response = try_return!(res.start());
-    let mut reader = BufferedReader::new(file);
-    let bytes = reader.read_to_end().unwrap();
+    let mut reader = BufReader::new(file);
+    let mut buffer = Vec::new();
+    reader.read_to_end(&mut buffer).unwrap();
 
-    try_return!(response.write_all(bytes.as_slice()));
+    try_return!(response.write_all(&buffer.as_ref()));
     try_return!(response.end());
 }
 
@@ -92,52 +89,52 @@ fn cur_time_string() -> String {
 /// Content-Length for the browser's response headers. It handles a 404 case by
 /// responding with a generic 404 file.
 fn send_file(req: &Request, path: &str, mut res: Response) {
-    let root = config.lookup("server.document_root").unwrap().as_str().unwrap();
-    let file_path: Path;
+    //let root = config.get(&"server.document_root".to_string()).unwrap().as_str().unwrap();
+    let root = "/Users/gsquire/poly/senior_project/html";
+    let root_path = Path::new(root);
     let file_to_send: File;
 
     // Let everyone know what cool server sent them this response.
     res.headers_mut().set(hyper::header::Server("swell".to_string()));
 
-    // By default, try and send the index 
-    if path == "/" {
-        file_path = Path::new(root.to_string() + "/index.html");
-    } else {
-        file_path = Path::new(root.to_string() + path);
-    }
+    // By default, try and send the index. 
+    let new_path = match path {
+        "/" => root_path.join("/index.html"),
+        _ => root_path.join(path)
+    };
 
     // Get the file extension so we can set the MIME type.
-    let ext = match file_path.extension() {
+    let ext = match new_path.as_path().extension() {
         Some(v) => v,
-        None => b"None"
+        None => OsStr::new("None")
     };
-    let ext_str = std::str::from_utf8(ext).unwrap();
+    let ext_str = ext.to_str().unwrap();
 
     // We send a 404 response in the error case here, 203 is the size of
     // the file since it will not change.
-    let file_stat = match file_path.stat() {
-        Ok(stat) => stat,
+    file_to_send = try_return!(File::open(&new_path));
+
+    let file_metadata = match file_to_send.metadata() {
+        Ok(metadata) => metadata,
         Err(e) => {
             error!("Could not perform stat on file: {}", e);
             info!("{} {} {} 404 {}",
                   cur_time_string(), req.method, path, req.remote_addr);
 
             *res.status_mut() = hyper::NotFound;
-            let error_file = Path::new(root.to_string() + "/404.html");
-            file_to_send = try_return!(File::open(&error_file));
+            let joined_path = root_path.join("/404.html");
+            let file = try_return!(File::open(&joined_path.as_path()));
 
             res.headers_mut().set(ContentLength(203)); // This is constant.
             res.headers_mut().set(
-                ContentType(get_content_type("html".as_slice())));
-            buffered_file_read(file_to_send, res);
+                ContentType(get_content_type("html".as_ref())));
+            buffered_file_read(file, res);
             return;
         }
     };
 
-    file_to_send = try_return!(File::open(&file_path));
-
     res.headers_mut().set(ContentType(get_content_type(ext_str)));
-    res.headers_mut().set(ContentLength(file_stat.size));
+    res.headers_mut().set(ContentLength(file_metadata.len()));
 
     info!("{} {} {} 200 {}",
           cur_time_string(), req.method, path, req.remote_addr);
@@ -149,9 +146,9 @@ fn send_file(req: &Request, path: &str, mut res: Response) {
 /// object helps us set headers and other HTTP information safely.
 fn base(req: Request, mut res: Response) {
     match req.uri {
-        AbsolutePath(ref path) => match (&req.method, path.as_slice()) {
+        AbsolutePath(ref path) => match (&req.method, path) {
             (&Get, _) => {
-                send_file(&req, path.as_slice(), res);
+                send_file(&req, path.as_ref(), res);
                 return;
             },
             _ => {
@@ -172,12 +169,12 @@ fn base(req: Request, mut res: Response) {
 /// It starts listening and loops until we send the kill signal.
 fn main() {
     let num_threads: usize =
-        config.lookup("server.num_threads").unwrap().as_integer().unwrap() as
+        config.get(&"server.num_threads".to_string()).unwrap().as_integer().unwrap() as
         usize;
     let port: u16 =
-        config.lookup("server.port").unwrap().as_integer().unwrap() as u16;
-    let server = Server::http(Ipv4Addr(0, 0, 0, 0), port);
-    let mut _listener = server.listen_threads(base, num_threads).unwrap();
+        config.get(&"server.port".to_string()).unwrap().as_integer().unwrap() as u16;
+    let server = Server::http(base);
+    let mut _listener = server.listen_threads("0.0.0.0:42007", num_threads).unwrap();
 
     // Initialize our logging library to standard out.
     swell::logger::init();
