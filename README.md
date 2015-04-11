@@ -10,10 +10,8 @@ used in production in any form.
 
 The name is inspired from my love of the ocean and surfing.
 
-Currently, I build the project using 1.0.0-alpha.2. Once beta is released 
-and the old_io package is changed, I will migrate my code to use the newer 
-libraries. But for now, I can achieve a more stable build using the 
-second alpha release.
+Currently, I build the project using 1.0.0-beta. Once the stable version is
+released I will use it, but I am sticking with beta now.
 
 To run the server:
 ```sh
