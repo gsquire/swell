@@ -15,6 +15,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::{Read, Write};
 use std::path::Path;
+use std::path::PathBuf;
 use std::vec::Vec;
 
 use hyper::Get;
@@ -26,11 +27,9 @@ use hyper::uri::RequestUri::AbsolutePath;
 
 // Allows for dynamic static variable creation at runtime.
 lazy_static! {
-    static ref args: Vec<String> = env::args().collect();
-    //static ref config: toml::Table =
-        //swell::config::parse_config(&args[1].as_ref());
-    static ref config: toml::Table =
-        swell::config::parse_config("/Users/gsquire/poly/senior_project/swell_config.toml");
+    static ref ARGS: Vec<String> = env::args().collect();
+    static ref CONFIG: toml::Table =
+        swell::config::parse_config(&ARGS[1].as_ref());
 }
 
 /// A macro I borrowed from Hyper to help unwrap a Result<T> enum.
@@ -89,22 +88,27 @@ fn cur_time_string() -> String {
 /// Content-Length for the browser's response headers. It handles a 404 case by
 /// responding with a generic 404 file.
 fn send_file(req: &Request, path: &str, mut res: Response) {
-    //let root = config.get(&"server.document_root".to_string()).unwrap().as_str().unwrap();
-    let root = "/Users/gsquire/poly/senior_project/html";
+    let server_table = CONFIG.get(&"server".to_string()).unwrap();
+    let root = server_table.lookup("document_root").unwrap().as_str().unwrap();
     let root_path = Path::new(root);
-    let file_to_send: File;
+    let mut file_reading_path = PathBuf::from(root_path);
 
     // Let everyone know what cool server sent them this response.
     res.headers_mut().set(hyper::header::Server("swell".to_string()));
 
     // By default, try and send the index. 
-    let new_path = match path {
-        "/" => root_path.join("/index.html"),
-        _ => root_path.join(path)
+    let _ = match path {
+        "/" => file_reading_path.push("index.html"),
+        _ => {
+            // We have to trim the root suffix to return the entire path.
+            // See the PathBuf documentation for push.
+            let trim = path.trim_left_matches('/');
+            file_reading_path.push(trim);
+        }
     };
 
     // Get the file extension so we can set the MIME type.
-    let ext = match new_path.as_path().extension() {
+    let ext = match file_reading_path.as_path().extension() {
         Some(v) => v,
         None => OsStr::new("None")
     };
@@ -112,18 +116,17 @@ fn send_file(req: &Request, path: &str, mut res: Response) {
 
     // We send a 404 response in the error case here, 203 is the size of
     // the file since it will not change.
-    file_to_send = try_return!(File::open(&new_path));
-
-    let file_metadata = match file_to_send.metadata() {
-        Ok(metadata) => metadata,
+    let file_to_send = match File::open(&file_reading_path) {
+        Ok(file_to_send) => file_to_send,
         Err(e) => {
             error!("Could not perform stat on file: {}", e);
             info!("{} {} {} 404 {}",
                   cur_time_string(), req.method, path, req.remote_addr);
 
             *res.status_mut() = hyper::NotFound;
-            let joined_path = root_path.join("/404.html");
-            let file = try_return!(File::open(&joined_path.as_path()));
+            let mut error_file = PathBuf::from(root_path);
+            error_file.push("404.html");
+            let file = try_return!(File::open(&error_file.as_path()));
 
             res.headers_mut().set(ContentLength(203)); // This is constant.
             res.headers_mut().set(
@@ -132,6 +135,9 @@ fn send_file(req: &Request, path: &str, mut res: Response) {
             return;
         }
     };
+
+    // We know the file exists if we just opened it.
+    let file_metadata = file_to_send.metadata().unwrap();
 
     res.headers_mut().set(ContentType(get_content_type(ext_str)));
     res.headers_mut().set(ContentLength(file_metadata.len()));
@@ -168,16 +174,15 @@ fn base(req: Request, mut res: Response) {
 /// configuration file.
 /// It starts listening and loops until we send the kill signal.
 fn main() {
-    let num_threads: usize =
-        config.get(&"server.num_threads".to_string()).unwrap().as_integer().unwrap() as
+    let server_table = CONFIG.get(&"server".to_string()).unwrap();
+    let num_threads: usize = server_table.lookup("num_threads").unwrap().as_integer().unwrap() as
         usize;
-    let port: u16 =
-        config.get(&"server.port".to_string()).unwrap().as_integer().unwrap() as u16;
+    let port: u16 = server_table.lookup("port").unwrap().as_integer().unwrap() as u16;
     let server = Server::http(base);
-    let mut _listener = server.listen_threads("0.0.0.0:42007", num_threads).unwrap();
+    let mut _listener = server.listen_threads(("0.0.0.0", port), num_threads).unwrap();
 
     // Initialize our logging library to standard out.
-    swell::logger::init();
+    let _logger_error = swell::logger::init();
 
     info!("Listening on port 42007...");
 }
