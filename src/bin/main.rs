@@ -1,3 +1,4 @@
+extern crate flate2;
 extern crate hyper;
 extern crate swell;
 extern crate toml;
@@ -19,11 +20,14 @@ use std::path::PathBuf;
 use std::vec::Vec;
 
 use hyper::Get;
-use hyper::header::ContentLength;
-use hyper::header::ContentType;
+use hyper::header::Encoding;
+use hyper::header::{AcceptEncoding, ContentLength, ContentType, ContentEncoding};
 use hyper::mime::{Mime, TopLevel, SubLevel};
 use hyper::server::{Server, Request, Response};
 use hyper::uri::RequestUri::AbsolutePath;
+
+use flate2::Compression;
+use flate2::write::GzEncoder;
 
 // Allows for dynamic static variable creation at runtime.
 lazy_static! {
@@ -41,6 +45,35 @@ macro_rules! try_return(
         }
     }}
 );
+
+/// A GZIP encoding writer for requests that accept it as a means of
+/// compression.
+fn gzip_encoded_read(file: File, mut res: Response) {
+    let mut ce_vec = Vec::new();
+    ce_vec.push(Encoding::Gzip);
+    res.headers_mut().set(ContentEncoding(ce_vec));
+
+    let mut response = try_return!(res.start());
+    let mut reader = BufReader::new(file);
+    let mut buffer = Vec::new();
+    reader.read_to_end(&mut buffer).unwrap();
+
+    let mut gzip_enc = GzEncoder::new(Vec::new(), Compression::Best);
+    let _ = gzip_enc.write_all(&buffer.as_ref());
+    let compressed_bytes = gzip_enc.finish();
+
+    try_return!(response.write_all(compressed_bytes.unwrap().as_ref()));
+    try_return!(response.end());
+}
+
+fn accepts_gzip_encoding(ae: &AcceptEncoding) -> bool {
+    for encoding in ae.iter() {
+        if encoding.item == Encoding::Gzip {
+            return true;
+        }
+    }
+    false
+}
 
 /// Take a file object and create a buffered reader to read from and send back
 /// to the client. It ends the Hyper response as well since the resource will
@@ -136,15 +169,32 @@ fn send_file(req: &Request, path: &str, mut res: Response) {
         }
     };
 
+    info!("{} {} {} 200 {}",
+          cur_time_string(), req.method, path, req.remote_addr);
+
     // We know the file exists if we just opened it.
     let file_metadata = file_to_send.metadata().unwrap();
 
     res.headers_mut().set(ContentType(get_content_type(ext_str)));
-    res.headers_mut().set(ContentLength(file_metadata.len()));
 
-    info!("{} {} {} 200 {}",
-          cur_time_string(), req.method, path, req.remote_addr);
-    buffered_file_read(file_to_send, res);
+    let accept_encoding = req.headers.get::<AcceptEncoding>();
+    match accept_encoding {
+        Some(ae) => {
+            match accepts_gzip_encoding(ae) {
+                true => { gzip_encoded_read(file_to_send, res); },
+                // GZIP not supported, send normally.
+                false => {
+                    res.headers_mut().set(ContentLength(file_metadata.len()));
+                    buffered_file_read(file_to_send, res);
+                }
+            }
+        },
+        // No encoding accepted, so send normally.
+        None => {
+            res.headers_mut().set(ContentLength(file_metadata.len()));
+            buffered_file_read(file_to_send, res);
+        }
+    }
 }
 
 /// This is the entry method for the Hyper server. It unwraps a request

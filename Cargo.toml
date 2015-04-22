@@ -24,6 +24,10 @@ log = "0.2.5"
 
 time = "0.1.19"
 
+[dependencies]
+
+flate2 = "0.2"
+
 [profile.dev]
 
 opt-level = 2
