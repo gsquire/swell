@@ -2,7 +2,7 @@
 name = "swell"
 version = "0.0.1"
 dependencies = [
- "flate2 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flate2 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.3.14 (git+https://github.com/hyperium/hyper.git)",
  "lazy_static 0.1.10 (git+https://github.com/Kimundi/lazy-static.rs)",
  "log 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -28,7 +28,7 @@ dependencies = [
 
 [[package]]
 name = "flate2"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "libc 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
