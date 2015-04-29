@@ -234,7 +234,7 @@ fn main() {
     // Initialize our logging library to standard out.
     let _logger_error = swell::logger::init();
 
-    info!("Listening on port 42007...");
+    info!("Listening on port {}...", port);
 }
 
 #[cfg(test)]
