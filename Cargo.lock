@@ -3,7 +3,7 @@ name = "swell"
 version = "0.0.1"
 dependencies = [
  "flate2 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "hyper 0.4.0 (git+https://github.com/hyperium/hyper.git)",
+ "hyper 0.5.0 (git+https://github.com/hyperium/hyper.git)",
  "lazy_static 0.1.10 (git+https://github.com/Kimundi/lazy-static.rs)",
  "log 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -23,7 +23,7 @@ dependencies = [
  "openssl 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
+ "url 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -47,8 +47,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "hyper"
-version = "0.4.0"
-source = "git+https://github.com/hyperium/hyper.git#38f40c7f6a17bd33951bbab1adddf542cbb96de6"
+version = "0.5.0"
+source = "git+https://github.com/hyperium/hyper.git#5e91ba19e4abc910def567e2c75921688355d671"
 dependencies = [
  "cookie 0.1.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "httparse 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -61,7 +61,7 @@ dependencies = [
  "traitobject 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "typeable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicase 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
+ "url 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -215,7 +215,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "url"
-version = "0.2.33"
+version = "0.2.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "matches 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
