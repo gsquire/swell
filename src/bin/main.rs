@@ -19,9 +19,10 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::vec::Vec;
 
+use hyper::Client;
 use hyper::Get;
 use hyper::header::Encoding;
-use hyper::header::{AcceptEncoding, ContentLength, ContentType, ContentEncoding};
+use hyper::header::{AcceptEncoding, Connection, ContentLength, ContentType, ContentEncoding};
 use hyper::mime::{Mime, TopLevel, SubLevel};
 use hyper::server::{Server, Request, Response};
 use hyper::uri::RequestUri::AbsolutePath;
@@ -197,14 +198,50 @@ fn send_file(req: &Request, path: &str, mut res: Response) {
     }
 }
 
+/// Check if the route request is a dynamic route.
+fn is_dynamic_route(route: &str, endpoints: &[toml::Value]) -> bool {
+    for r in endpoints.iter() {
+        let dyn_route = r.as_str().unwrap();
+        if route == dyn_route {
+            return true;
+        }
+    }
+    false
+}
+
+/// This is our function to handle dynamic requests sent to the port that
+/// the user specified.
+fn handle_dynamic(req: &Request, route: &str, res: Response) {
+    let mut response = try_return!(res.start());
+    let dynamic_table = CONFIG.get(&"server".to_string()).unwrap();
+    let endpoint_port = dynamic_table.lookup("endpoint_port").unwrap().as_integer().unwrap();
+    let url = format!("http://localhost:{}{}", endpoint_port, route);
+    let url_str: &str = url.as_ref();
+    let mut client = Client::new();
+    let mut dyn_res = client.get(url_str).header(Connection::close()).send().unwrap();
+    let mut res_string = String::new();
+
+    info!("{} {} {} 200 {}",
+          cur_time_string(), req.method, route, req.remote_addr);
+    dyn_res.read_to_string(&mut res_string).unwrap();
+    try_return!(response.write_all(&res_string.as_bytes()));
+    try_return!(response.end());
+}
+
 /// This is the entry method for the Hyper server. It unwraps a request
 /// structure and ensures that we handle each one correctly. The response
 /// object helps us set headers and other HTTP information safely.
 fn base(req: Request, mut res: Response) {
+    let dynamic_table = CONFIG.get(&"server".to_string()).unwrap();
+    let endpoints = dynamic_table.lookup("endpoints").unwrap().as_slice().unwrap();
+
     match req.uri {
         AbsolutePath(ref path) => match (&req.method, path) {
             (&Get, _) => {
-                send_file(&req, path.as_ref(), res);
+                match is_dynamic_route(path.as_ref(), endpoints) {
+                    true => handle_dynamic(&req, path.as_ref(), res),
+                    false => send_file(&req, path.as_ref(), res)
+                }
                 return;
             },
             _ => {

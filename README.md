@@ -13,6 +13,13 @@ The name is inspired from my love of the ocean and surfing.
 Currently, I build the project using 1.0.0-beta.4. Once the stable version is
 released I will use it, but I am sticking with beta now.
 
+You can define dynamic routes by using the endpoints and it's associated port
+as seen in the example below. This is a way to add some REST functionality
+to the server. Is it ideal? Probably not. But you can use any other process
+on the machine, open a port, and swell will send requests to it.
+
+Thus, it is language agnostic. I hope that is attractive at least.
+
 To run the server:
 ```sh
 cargo build --release
@@ -27,6 +34,8 @@ Here is an example configuration file:
 document_root = "/Users/gsquire/poly/senior_project/html"
 num_threads = 16
 port = 42007
+endpoints = ["/test"]
+endpoint_port = 3000
 ```
 The file format is TOML and the specification for that format can be
 found [here](https://github.com/toml-lang/toml).
@@ -35,3 +44,6 @@ Current configuration options:
 * document_root is the root directory from which to serve files from
 * num_threads is the number of threads the server will use
 * port is the port on which it will serve files
+* endpoints is the set of dynamic routes you wish to serve on the specified
+port.
+* endpoint_port is the port to send requests to for the dynamic routes
