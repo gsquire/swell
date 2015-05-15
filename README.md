@@ -10,7 +10,7 @@ used in production in any form.
 
 The name is inspired from my love of the ocean and surfing.
 
-Currently, I build the project using 1.0.0-beta.4. Once the stable version is
+Currently, I build the project using 1.0.0-beta.5. Once the stable version is
 released I will use it, but I am sticking with beta now.
 
 You can define dynamic routes by using the endpoints and it's associated port
