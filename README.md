@@ -10,8 +10,7 @@ used in production in any form.
 
 The name is inspired from my love of the ocean and surfing.
 
-Currently, I build the project using 1.0.0-beta.5. Once the stable version is
-released I will use it, but I am sticking with beta now.
+The project compiles on Rust 1.0.0 stable, which I will continue to track.
 
 You can define dynamic routes by using the endpoints and it's associated port
 as seen in the example below. This is a way to add some REST functionality
