@@ -102,6 +102,7 @@ fn get_content_type(extension: &str) -> Mime {
         "jpeg" | "jpg" => Mime(TopLevel::Image, SubLevel::Jpeg, opts),
         "png" => Mime(TopLevel::Image, SubLevel::Png, opts),
         "gif" => Mime(TopLevel::Image, SubLevel::Gif, opts),
+        "mp4" => Mime(TopLevel::Video, SubLevel::Ext("mp4".to_string()), opts),
         _ => Mime(TopLevel::Text, SubLevel::Plain, opts)
     }
 }
