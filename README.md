@@ -10,7 +10,8 @@ used in production in any form.
 
 The name is inspired from my love of the ocean and surfing.
 
-The project compiles on Rust 1.0.0 stable, which I will continue to track.
+The project compiles with each version of Rust stable and the latest libraries
+that are listed in the Cargo file.
 
 You can define dynamic routes by using the endpoints and it's associated port
 as seen in the example below. This is a way to add some REST functionality
