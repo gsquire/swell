@@ -218,7 +218,7 @@ fn handle_dynamic(req: &Request, route: &str, res: Response) {
     let endpoint_port = dynamic_table.lookup("endpoint_port").unwrap().as_integer().unwrap();
     let url = format!("http://localhost:{}{}", endpoint_port, route);
     let url_str: &str = url.as_ref();
-    let mut client = Client::new();
+    let client = Client::new();
     let mut dyn_res = client.get(url_str).header(Connection::close()).send().unwrap();
     let mut res_string = String::new();
 
@@ -263,11 +263,12 @@ fn base(req: Request, mut res: Response) {
 /// It starts listening and loops until we send the kill signal.
 fn main() {
     let server_table = CONFIG.get(&"server".to_string()).unwrap();
-    let num_threads: usize = server_table.lookup("num_threads").unwrap().as_integer().unwrap() as
+    let _num_threads: usize = server_table.lookup("num_threads").unwrap().as_integer().unwrap() as
         usize;
     let port: u16 = server_table.lookup("port").unwrap().as_integer().unwrap() as u16;
-    let server = Server::http(base);
-    let mut _listener = server.listen_threads(("0.0.0.0", port), num_threads).unwrap();
+    let addr = format!("0.0.0.0:{}", port);
+    let addr_str: &str = addr.as_ref();
+    let _server = Server::http(addr_str).unwrap().handle(base);
 
     // Initialize our logging library to standard out.
     let _logger_error = swell::logger::init();
